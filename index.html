@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Mobile-First Web App</title>
+  <!-- Tailwind CSS CDN for styling without build tools -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Support modern dynamic viewport units for mobile browser URL bars */
+    .app-viewport {
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    
+    /* Ensure the main scrollable area works reliably across mobile browsers */
+    .chat-scroll-area {
+      flex: 1 1 0%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* iOS safe area inset handling for edge-to-edge screens */
+    .pb-safe {
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900 antialiased font-sans">
+
+  <!-- Fallback Loader: Visible until JS runs -->
+  <div id="loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
+    <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+    <p class="mt-4 text-gray-600 font-medium text-sm">Loading App...</p>
+  </div>
+
+  <!-- Main App Shell -->
+  <div id="app" class="app-viewport flex flex-col max-w-md mx-auto bg-white shadow-xl hidden">
+    
+    <!-- Top Header -->
+    <header class="flex-none px-4 py-3 bg-blue-600 text-white shadow-md flex items-center justify-between sticky top-0 z-10">
+      <h1 class="text-lg font-semibold tracking-wide">Mobile Chat App</h1>
+      <span class="inline-block w-2.5 h-2.5 bg-green-400 rounded-full" title="Online"></span>
+    </header>
+
+    <!-- Main Message / Content Container -->
+    <main id="chat-container" class="chat-scroll-area p-4 space-y-3 bg-slate-50">
+      <div class="flex justify-start">
+        <div class="max-w-[80%] px-4 py-2 bg-white rounded-2xl rounded-tl-none shadow-sm text-sm text-gray-800 border border-gray-100">
+          Welcome! Type a message below to test the mobile layout.
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Input Bar (Sticky & Mobile Keyboard Safe) -->
+    <footer class="flex-none p-3 bg-white border-t border-gray-200 sticky bottom-0 z-10 pb-safe">
+      <form id="chat-form" class="flex items-center gap-2">
+        <input 
+          type="text" 
+          id="chat-input" 
+          placeholder="Type a message..." 
+          autocomplete="off"
+          class="flex-1 px-4 py-2.5 text-sm bg-gray-100 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+        />
+        <button 
+          type="submit" 
+          class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium rounded-full shadow-sm transition-colors flex-none"
+        >
+          Send
+        </button>
+      </form>
+    </footer>
+
+  </div>
+
+  <!-- SCRIPT TAG AT THE VERY END OF BODY -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loadingEl = document.getElementById('loading');
+      const appEl = document.getElementById('app');
+      const chatForm = document.getElementById('chat-form');
+      const chatInput = document.getElementById('chat-input');
+      const chatContainer = document.getElementById('chat-container');
+
+      // 1. Hide the fallback loader and reveal the application UI
+      if (loadingEl && appEl) {
+        loadingEl.style.display = 'none';
+        appEl.classList.remove('hidden');
+      }
+
+      // 2. Helper to automatically keep scrolling to the newest message
+      const scrollToBottom = () => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      };
+
+      // 3. Handle message submissions
+      chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        // Render user message bubble
+        const userMsgWrapper = document.createElement('div');
+        userMsgWrapper.className = 'flex justify-end';
+        userMsgWrapper.innerHTML = `
+          <div class="max-w-[80%] px-4 py-2 bg-blue-600 text-white rounded-2xl rounded-tr-none shadow-sm text-sm">
+            ${escapeHtml(text)}
+          </div>
+        `;
+        chatContainer.appendChild(userMsgWrapper);
+
+        // Clear input and refocus
+        chatInput.value = '';
+        scrollToBottom();
+
+        // Simulate an automated reply
+        setTimeout(() => {
+          const replyMsgWrapper = document.createElement('div');
+          replyMsgWrapper.className = 'flex justify-start';
+          replyMsgWrapper.innerHTML = `
+            <div class="max-w-[80%] px-4 py-2 bg-white rounded-2xl rounded-tl-none shadow-sm text-sm text-gray-800 border border-gray-100">
+              Received: "${escapeHtml(text)}"
+            </div>
+          `;
+          chatContainer.appendChild(replyMsgWrapper);
+          scrollToBottom();
+        }, 600);
+      });
+
+      // 4. Utility function to prevent XSS in text rendering
+      function escapeHtml(string) {
+        const div = document.createElement('div');
+        div.innerText = string;
+        return div.innerHTML;
+      }
+
+      // 5. Scroll to bottom when mobile soft keyboard shows up
+      chatInput.addEventListener('focus', () => {
+        setTimeout(scrollToBottom, 300);
+      });
+    });
+  </script>
+</body>
+</html>
+
